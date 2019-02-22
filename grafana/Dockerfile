@@ -23,7 +23,7 @@ COPY pre_run.sh /pre_run.sh
 # Note that these will be processed by the pre_run.sh script to substitute
 # environment variable values (like the InfluxDB user, password, etc.).
 COPY provisioning /etc/grafana/provisioning
-RUN chown -R grafana:grafana /etc/grafana/provisioning
+#RUN chown -R grafana:grafana /etc/grafana/provisioning
 
 # Override the entrypoint to use our custom one, then call our custom pre-run
 # init script (which will finally call the grafana contaienr run script).
