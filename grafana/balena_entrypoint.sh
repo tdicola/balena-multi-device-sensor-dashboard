@@ -6,7 +6,12 @@
 #    name (as listed in Balena Cloud, not the hostname!).  This is useful to
 #    run a service only a subset of devices in an app.
 #  - Materialize any configuration files in the container from environment
-#    variable values with the MATERIALIZE_CONFIGS
+#    variable values with the GEN_CONFIGS variable.  This is a list of tuples:
+#    <env variable name>:<file to create with env variable value>
+#    For example:
+#    GEN_CONFIGS=FOO:/etc/foo BAR:/etc/bar
+#    Will take the value of FOO and place it in /etc/foo, and the value of BAR
+#    and place it in /etc/bar.
 set -e
 
 # Generate configs.
