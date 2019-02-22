@@ -1,0 +1,82 @@
+version: '2'
+
+services:
+  ## Collection Services #######################################################
+  # These services must run on one device in the application and will form
+  # the basis of the data collection and dashboard stack.
+  #
+  # InfluxDB service will run an InfluxDB instance that is provisioned to
+  # accept telegraf sensor measurements over a secure self-signed SSL encrypted
+  # HTTP endpoint.  See ./influxdb/influxdb.conf if you'd like to further
+  # customize InfluxDB.
+  influxdb:
+    build: influxdb
+    environment:
+      # Use RUN_ON_DEVICES environment variable to control which device will
+      # run this service.  This should be the device name (not the host name!)
+      # as shown in the belana cloud app.
+      - 'RUN_ON_DEVICES=collector-pi3'
+    ports:
+      # Although the default port 8086 is used, SSL and authentication are
+      # enabled so this InfluxDB instance is reasonably secure from snooping
+      # (much more secure than its default of no auth, no encryption!).
+      - '8086:8086'
+    volumes:
+      - 'influxdb-data:/var/lib/influxdb'
+    restart: on-failure
+  # Grafana service should run on the same host as InfluxDB and will provide
+  # a nice web dashboard builder for sensor data.
+  grafana:
+    build: grafana
+    environment:
+      - 'RUN_ON_DEVICES=collector-pi3'
+    ports:
+      # Map grafana's web interface to the device's port 80 default web port.
+      # This makes it easy to enable the belana public URL and tunnel grafana
+      # dashboard's through belana cloud.
+      - '80:3000'
+    volumes:
+      - 'grafana-data:/var/lib/grafana'
+    restart: on-failure
+    depends_on:
+     - influxdb
+
+  ## Sensor Services ###########################################################
+  # These services should run on each device with a sensor.  Telegraf will be
+  # used to invoke a sensor reading script and send the sensor data to the
+  # collection services automatically.  You can copy this node and make as
+  # many instances on as many devices as you desire! Just set RUN_ON_DEVICES
+  # to the belana device name to run on, and TELEGRAF_EXEC_COMMAND to the
+  # script to run (scripts are stored in ./telegraf/connnect/ and available to
+  # the container under the /connect path).  Collection scripts can be written
+  # in any langauge and use any libraries, they just need to output InfluxDB
+  # format lines (see https://docs.influxdata.com/influxdb/v1.7/write_protocols/line_protocol_tutorial/).
+  # You might need to modify or copy the ./telegraf/Dockerfile to install any
+  # custom scripts, libraries, dependencies, etc!
+  sensors-pi3:
+     build: telegraf
+     environment:
+       # Note that RUN_ON_DEVICES can actually take a space-separated list of
+       # device names should you want this exact container to run on multiple
+       # devices.  For example:
+       # - RUN_ON_DEVICES=foo-device bar-device
+       - 'RUN_ON_DEVICES=collector-pi3'
+       # Set this to the script that should run (make sure it's marked executable!)
+       # and print InfluxDB line format sensor data.  By default all scripts in
+       # the ./telegraf/collect/ folder will be copied into the /collect/ path
+       # on the container.  Note that by default telegraf will run the command
+       # every 10 seconds, however you can change that frequency by editing the
+       # ./telegraf/telegraf.conf file.
+       - 'TELEGRAF_EXEC_COMMAND=/collect/mock_dht_sensor.sh'
+     restart: on-failure
+
+  sensors-bbb:
+     build: telegraf
+     environment:
+       - 'RUN_ON_DEVICES=sensors-bbb'
+       - 'TELEGRAF_EXEC_COMMAND=/collect/dht_sensor.sh'
+     restart: on-failure
+
+volumes:
+  influxdb-data:
+  grafana-data:
