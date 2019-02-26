@@ -1,8 +1,5 @@
 # Golang build container
-FROM golang:1.11.5
-
-ENV GOARM=7
-ENV GOARCH=arm
+FROM balenalib/armv7hf-debian-golang:1.11.5-stretch-build
 
 WORKDIR $GOPATH/src/github.com/grafana/grafana
 
