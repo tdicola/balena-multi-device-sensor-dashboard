@@ -9,11 +9,8 @@ WORKDIR $GOPATH/src/github.com/grafana/grafana
 COPY ./grafana/Gopkg.toml ./grafana/Gopkg.lock ./
 COPY ./grafana/vendor vendor
 
-ARG DEP_ENSURE=""
-RUN if [ ! -z "${DEP_ENSURE}" ]; then \
-      go get -u github.com/golang/dep/cmd/dep && \
-      dep ensure --vendor-only; \
-    fi
+RUN go get -u github.com/golang/dep/cmd/dep && \
+    dep ensure --vendor-only
 
 COPY ./grafana/pkg pkg
 COPY ./grafana/build.go build.go
