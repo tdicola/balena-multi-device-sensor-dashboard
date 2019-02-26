@@ -6,8 +6,8 @@ ENV GOARCH=arm
 
 WORKDIR $GOPATH/src/github.com/grafana/grafana
 
-COPY Gopkg.toml Gopkg.lock ./
-COPY vendor vendor
+COPY ./grafana/Gopkg.toml Gopkg.lock ./
+COPY ./grafana/vendor vendor
 
 ARG DEP_ENSURE=""
 RUN if [ ! -z "${DEP_ENSURE}" ]; then \
@@ -15,9 +15,9 @@ RUN if [ ! -z "${DEP_ENSURE}" ]; then \
       dep ensure --vendor-only; \
     fi
 
-COPY pkg pkg
-COPY build.go build.go
-COPY package.json package.json
+COPY ./grafana/pkg pkg
+COPY ./grafana/build.go build.go
+COPY ./grafana/package.json package.json
 
 RUN go run build.go build
 
@@ -26,15 +26,15 @@ FROM node:10.14.2
 
 WORKDIR /usr/src/app/
 
-COPY package.json yarn.lock ./
-COPY packages packages
+COPY ./grafana/package.json yarn.lock ./
+COPY ./grafana/packages packages
 
 RUN yarn install --pure-lockfile --no-progress
 
-COPY Gruntfile.js tsconfig.json tslint.json ./
-COPY public public
-COPY scripts scripts
-COPY emails emails
+COPY ./grafana/Gruntfile.js ./grafana/tsconfig.json ./grafana/tslint.json ./
+COPY ./grafana/public public
+COPY ./grafana/scripts scripts
+COPY ./grafana/emails emails
 
 ENV NODE_ENV production
 RUN ./node_modules/.bin/grunt build
@@ -56,11 +56,11 @@ ENV PATH=/usr/share/grafana/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bi
 WORKDIR $GF_PATHS_HOME
 
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -qq -y libfontconfig ca-certificates && \
+    apt-get install -qq -y libfontconfig ca-certificates gettext-base && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
-COPY conf ./conf
+COPY ./grafana/conf ./conf
 
 RUN mkdir -p "$GF_PATHS_HOME/.aws" && \
     groupadd -r -g $GF_GID grafana && \
@@ -79,11 +79,28 @@ RUN mkdir -p "$GF_PATHS_HOME/.aws" && \
 COPY --from=0 /go/src/github.com/grafana/grafana/bin/linux-amd64/grafana-server /go/src/github.com/grafana/grafana/bin/linux-amd64/grafana-cli ./bin/
 COPY --from=1 /usr/src/app/public ./public
 COPY --from=1 /usr/src/app/tools ./tools
-COPY tools/phantomjs/render.js ./tools/phantomjs/render.js
+COPY ./grafana/tools/phantomjs/render.js ./tools/phantomjs/render.js
 
 EXPOSE 3000
 
-COPY ./packaging/docker/run.sh /run.sh
+COPY ./grafana/packaging/docker/run.sh /run.sh
 
+# Add custom entrypoint script to allow running on specific devices, materialize
+# config into files, etc.
+COPY ./balena_entrypoint.sh /balena_entrypoint.sh
+
+# Add another custom pre-run script that substitutes environment variables into
+# grafana's YAML provisioning config files (work around for this bug:
+# https://github.com/grafana/grafana/issues/12896).
+COPY ./pre_run.sh /pre_run.sh
+
+# Copy the provisioning config files into the default location grafana expects.
+# Note that these will be processed by the pre_run.sh script to substitute
+# environment variable values (like the InfluxDB user, password, etc.).
+COPY ./provisioning /etc/grafana/provisioning
+#RUN chown -R grafana:grafana /etc/grafana/provisioning
+
+# Override the entrypoint to use our custom one, then call our custom pre-run
+# init script (which will finally call the grafana contaienr run script).
 USER grafana
-ENTRYPOINT [ "/run.sh" ]
+ENTRYPOINT [ "/balena_entrypoint.sh", "/pre_run.sh" ]

@@ -27,9 +27,7 @@ services:
   # Grafana service should run on the same host as InfluxDB and will provide
   # a nice web dashboard builder for sensor data.
   grafana:
-    build:
-      context: ./grafana/grafana
-      dockerfile: ./grafana/Dockerfile.armv7
+    build: grafana
     environment:
       - 'RUN_ON_DEVICES=collector-pi3'
     ports:
