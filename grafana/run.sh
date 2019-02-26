@@ -9,7 +9,8 @@ set -e
 cd /opt/grafana-6.0.0
 
 echo 'run.sh: Replacing environment variables in provisioning configs.'
-find ./conf/provisioning -name '*.yml' -exec sh -c 'envsubst < {} > {}' \;
+envsubst < ./conf/provisioning/datasources/influxdb.yml > ./conf/provisioning/datasources/influxdb.yml
+#find ./conf/provisioning -name '*.yml' -exec sh -c 'envsubst < {} > {}' \;
 
 ./bin/grafana-server web \
   cfg:default.log.mode="console" \
