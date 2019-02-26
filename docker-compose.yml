@@ -26,6 +26,7 @@ services:
     restart: on-failure
   # Grafana service should run on the same host as InfluxDB and will provide
   # a nice web dashboard builder for sensor data.
+
   grafana:
     build: grafana
     environment:
