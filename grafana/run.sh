@@ -10,8 +10,8 @@ cd /opt/grafana-6.0.0
 
 echo 'run.sh: Replacing environment variables in provisioning configs.'
 echo 'run.sh: TEMPLATE CONFIG'
-cat /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml
-envsubst < /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml > /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml
+cat /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml.template
+envsubst < /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml.template > /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml
 #find ./conf/provisioning -name '*.yml' -exec sh -c 'envsubst < {} > {}' \;
 echo 'run.sh: UPDATED CONFIG'
 cat /opt/grafana-6.0.0/conf/provisioning/datasources/influxdb.yml
