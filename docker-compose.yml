@@ -28,6 +28,8 @@ services:
   # a nice web dashboard builder for sensor data.
   grafana:
     build: grafana
+      context: ./grafana/grafana
+      dockerfile: ./grafana/Dockerfile.armv7
     environment:
       - 'RUN_ON_DEVICES=collector-pi3'
     ports:
