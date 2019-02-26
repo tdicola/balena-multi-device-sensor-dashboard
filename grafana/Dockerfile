@@ -6,7 +6,7 @@ ENV GOARCH=arm
 
 WORKDIR $GOPATH/src/github.com/grafana/grafana
 
-COPY ./grafana/Gopkg.toml Gopkg.lock ./
+COPY ./grafana/Gopkg.toml ./grafana/Gopkg.lock ./
 COPY ./grafana/vendor vendor
 
 ARG DEP_ENSURE=""
