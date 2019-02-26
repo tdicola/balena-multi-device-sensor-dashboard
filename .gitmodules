@@ -1,3 +1,0 @@
-[submodule "grafana/grafana"]
-	path = grafana/grafana
-	url = https://github.com/grafana/grafana.git
