@@ -1,5 +1,5 @@
 # Golang build container
-FROM balenalib/armv7hf-debian-golang:1.11.5-stretch-build
+FROM balenalib/armv7hf-debian-golang:1.11.2-stretch-build
 
 WORKDIR $GOPATH/src/github.com/grafana/grafana
 
