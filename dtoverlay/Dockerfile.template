@@ -1,0 +1,24 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-debian:stretch
+
+# Path inside the container to store overlays and scripts.
+ARG ROOT_PATH=/var/dtoverlay
+
+# Install dependencies.
+RUN install_packages device-tree-compiler
+
+# Create a hiearchy under the root path with an overlays folder for the source
+# and compiled overlay files, and a scripts folder with the scripts used to
+# compile and load the overlays.
+WORKDIR $ROOT_PATH
+COPY ./overlays overlays
+COPY ./scripts scripts
+
+# Compile all sources.
+RUN ./scripts/compile_dts.sh ./overlays/
+
+# Use the balena_entrypoint.sh script which allows running on specific devices
+# with the RUN_ON_DEVICES environment variable.  Then call into the load_dtbo.sh
+# script to load the overlays at runtime.  The convention is to specify these
+# as the COMMAND so they are passed as option to the load_dtbo.sh script.
+ENTRYPOINT [ "./scripts/balena_entrypoint.sh", "./scripts/load_dtbo.sh", "./overlays" ]
+CMD []

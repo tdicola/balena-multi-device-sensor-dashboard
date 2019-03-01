@@ -1,0 +1,62 @@
+/* Device Tree Overlay to load the Pimoroni Enviro-Phat as native Linux kernel
+   sensors on the Raspberry Pi.  This loads the BMP280 pressure/temperature
+   sensor as an IIO device (under /sys/bus/iio/devices) and the ADS1015 analog
+   to digital converter as an older hwmon device (under /sys/class/hwmon).  The
+   TCS3472 light sensor and LSM303 accelerometer/magnetometer are not loaded
+   (they are supported by drivers in the kernel but those drivers aren't
+   compiled in by default and need to be loaded separately).
+*/
+/dts-v1/;
+/plugin/;
+/ {
+  fragment@0 {
+    /* Fragment targets the /dev/i2c-1 bus which is the default for HATs and
+       peripherals connected to the GPIO header on the Raspberry Pi.
+       Other boards might need to adjust this to point at the appropriate I2C
+       bus.
+    */
+    target = <&i2c1>;
+    __overlay__ {
+      /* Status and address/size cells are boilerplate that tell the overlay
+         to ensure the I2C bus is enabled and that the following nodes define
+         a single reg value (required for I2C devices).
+      */
+      status = "okay";
+      #address-cells = <1>;
+      #size-cells = <0>;
+
+      /* Define the BMP280 pressure sensor at address 0x77 */
+      bmp280@77 {
+        compatible = "bosch,bmp280";
+        reg = <0x77>;
+
+        /* Note there are optional parameters to control the sample rate and
+           other state of the BMP280 sensor.  See the documentation here:
+           https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/Documentation/devicetree/bindings/iio/pressure/bmp085.txt?h=v4.14.104
+        */
+      };
+
+      /* Define the ADS1015 ADC at address 0x49 */
+      ads1015@49 {
+        compatible = "ti,ads1015";
+        reg = <0x49>;
+
+        /* Note you can define the gain and sample rate for each of the 4
+           channels of the ADC.  See the documentation here:
+           https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/Documentation/devicetree/bindings/hwmon/ads1015.txt?h=v4.14.104
+
+           With no explicit configuration the defaults of +/-2V gain/range and
+           1600 samples/sec are used for each channel.  Both differential and
+           single ended channel measurements are supported by the hwmon device.
+           The in0_input...in3_input objects (under /sys/class/hwmon/hwmon0/device)
+           read differential measurements (i.e. in0_input reads the voltage
+           between channel 0 and 1, in1_input reads between channel 1 and 3), see
+           the documentation above for the list of channels used by each node.
+           The in4_input...in7_input objects read the voltage between each
+           channel and ground (i.e. single ended channel measurement).
+        */
+      };
+
+    };
+  };
+};

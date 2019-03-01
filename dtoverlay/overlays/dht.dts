@@ -1,0 +1,34 @@
+/* Raspberry Pi DHT sensor device tree fragment example.
+   Configured for DHT sensor connected to Pi GPIO 18.
+*/
+/dts-v1/;
+/plugin/;
+/ {
+
+  fragment@0 {
+    target-path = "/";
+    __overlay__ {
+
+      dht11@0 {
+        compatible = "dht11";
+        gpios = <&gpio 18 0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&dht11_pins>;
+      };
+    };
+  };
+
+  fragment@1 {
+    target = <&gpio>;
+    __overlay__ {
+
+      dht11_pins: dht11_pins {
+        brcm,pins = <18>;
+        brcm,function = <0>; // in
+        brcm,pull = <0>; // off
+      };
+
+    };
+  };
+
+};

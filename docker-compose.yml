@@ -21,14 +21,15 @@ services:
       # enabled so this InfluxDB instance is reasonably secure from snooping
       # (much more secure than its default of no auth, no encryption!).
       - '8086:8086'
+    restart: on-failure
     volumes:
       - 'influxdb-data:/var/lib/influxdb'
-    restart: on-failure
   # Grafana service should run on the same host as InfluxDB and will provide
   # a nice web dashboard builder for sensor data.
-
   grafana:
     build: grafana
+    depends_on:
+      - influxdb
     environment:
       - 'RUN_ON_DEVICES=collector-pi3'
     ports:
@@ -36,11 +37,36 @@ services:
       # This makes it easy to enable the belana public URL and tunnel grafana
       # dashboard's through belana cloud.
       - '80:3000'
+    restart: on-failure
     volumes:
       - 'grafana-data:/var/lib/grafana'
-    restart: on-failure
-    depends_on:
-     - influxdb
+
+  ## Sensor Driver Loaders #####################################################
+  # These services use the dtoverlay container to load device tree overlays
+  # at runtime.  The overlays are compiled into the container from the
+  # dtoverlay/overlays folder (from .dts source files) and specified to load
+  # as a list in the command option.
+  dtoverlay-enviro-phat-pi3:
+    build: dtoverlay
+    # List any overlays to load in the command here.  Each one should be the
+    # name of a file in the dtoverlay/overlays folder WITHOUT the .dts extension.
+    command: enviro-phat
+    # Make this service only run on the collector node with envirophat connected.
+    environment:
+      - 'RUN_ON_DEVICES=collector-pi3'
+    # MUST run all dtoverlay container services as privileged service.
+    privileged: true
+    # Good idea to specify no restart to prevent constantly loading the overlay
+    # on failure.
+    restart: no
+
+  dtoverlay-dht-bbb:
+    build: dtoverlay
+    command: dht
+    environment:
+      - 'RUN_ON_DEVICES=sensor-bbb'
+    privileged: true
+    restart: no
 
   ## Sensor Services ###########################################################
   # These services should run on each device with a sensor.  Telegraf will be
@@ -56,6 +82,10 @@ services:
   # custom scripts, libraries, dependencies, etc!
   sensors-pi3:
      build: telegraf
+     depends_on:
+       # Make sure the sensor node only runs after the device tree overlay
+       # loader runs!
+       - dtoverlay-enviro-phat-pi3
      environment:
        # Note that RUN_ON_DEVICES can actually take a space-separated list of
        # device names should you want this exact container to run on multiple
@@ -73,8 +103,10 @@ services:
 
   sensors-bbb:
      build: telegraf
+     depends_on:
+       - dtoverlay-dht-bbb
      environment:
-       - 'RUN_ON_DEVICES=sensors-bbb'
+       - 'RUN_ON_DEVICES=sensor-bbb'
        - 'TELEGRAF_EXEC_COMMAND=/collect/dht_sensor.sh'
      restart: on-failure
 
